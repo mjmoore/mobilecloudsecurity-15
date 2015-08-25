@@ -1,9 +1,3 @@
-/* 
- **
- ** Copyright 2014, Jules White
- **
- ** 
- */
 package org.magnum.mobilecloud.video.auth;
 
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,43 +11,43 @@ import org.springframework.security.oauth2.provider.client.ClientDetailsUserDeta
 /**
  * A class that combines a UserDetailsService and ClientDetailsService
  * into a single object.
- * 
- * @author jules
- *
  */
 public class ClientAndUserDetailsService implements UserDetailsService,
 		ClientDetailsService {
 
-	private final ClientDetailsService clients_;
-
-	private final UserDetailsService users_;
+	private final ClientDetailsService clients;
+	private final UserDetailsService users;
 	
-	private final ClientDetailsUserDetailsService clientDetailsWrapper_;
+	private final ClientDetailsUserDetailsService clientDetailsWrapper;
 
-	public ClientAndUserDetailsService(ClientDetailsService clients,
-			UserDetailsService users) {
+	public ClientAndUserDetailsService(ClientDetailsService clients, UserDetailsService users) {
 		super();
-		clients_ = clients;
-		users_ = users;
-		clientDetailsWrapper_ = new ClientDetailsUserDetailsService(clients_);
+		this.clients = clients;
+		this.users = users;
+
+		clientDetailsWrapper = new ClientDetailsUserDetailsService(clients);
 	}
 
 	@Override
 	public ClientDetails loadClientByClientId(String clientId)
 			throws ClientRegistrationException {
-		return clients_.loadClientByClientId(clientId);
+		
+		return clients.loadClientByClientId(clientId);
 	}
 	
 	@Override
 	public UserDetails loadUserByUsername(String username)
 			throws UsernameNotFoundException {
-		UserDetails user = null;
-		try{
-			user = users_.loadUserByUsername(username);
-		}catch(UsernameNotFoundException e){
-			user = clientDetailsWrapper_.loadUserByUsername(username);
-		}
+		
+		final UserDetails user = getUserDetails(username);
 		return user;
 	}
 
+	private UserDetails getUserDetails(final String username) {
+		try{
+			return users.loadUserByUsername(username);
+		}catch(UsernameNotFoundException e){
+			return clientDetailsWrapper.loadUserByUsername(username);
+		}
+	}
 }

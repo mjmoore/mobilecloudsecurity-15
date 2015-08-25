@@ -1,5 +1,11 @@
 package org.magnum.mobilecloud.integration.test;
 
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.net.ssl.SSLContext;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContextBuilder;
@@ -20,17 +26,27 @@ import org.apache.http.impl.client.HttpClients;
 public class UnsafeHttpsClient {
 
 	public static HttpClient createUnsafeClient() {
+		final SSLContextBuilder builder = new SSLContextBuilder();
+		
 		try {
-			SSLContextBuilder builder = new SSLContextBuilder();
 			builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-			SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
-					builder.build());
-			CloseableHttpClient httpclient = HttpClients.custom()
-					.setSSLSocketFactory(sslsf).build();
-
-			return httpclient;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		} catch (NoSuchAlgorithmException | KeyStoreException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
+		}
+		
+		final SSLContext sslContext = buildSSLContext(builder);
+		
+		final SSLConnectionSocketFactory sslSocketFactory = new SSLConnectionSocketFactory(sslContext);
+		return HttpClients.custom().setSSLSocketFactory(sslSocketFactory).build();
+	}
+	
+	private static SSLContext buildSSLContext(SSLContextBuilder builder) {
+		try {
+			return builder.build();
+		} catch (KeyManagementException | NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
 		}
 	}
 }

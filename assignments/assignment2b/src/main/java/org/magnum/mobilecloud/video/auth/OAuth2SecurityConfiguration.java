@@ -65,8 +65,9 @@ public class OAuth2SecurityConfiguration {
 		private UserDetailsService userDetailsService;
 		
 		@Autowired
-		protected void registerAuthentication(
-				final AuthenticationManagerBuilder auth) throws Exception {
+		protected void registerAuthentication(final AuthenticationManagerBuilder auth) 
+				throws Exception {
+			
 			auth.userDetailsService(userDetailsService);
 		}
 	}
@@ -77,35 +78,29 @@ public class OAuth2SecurityConfiguration {
 	 */
 	@Configuration
 	@EnableResourceServer
-	protected static class ResourceServer extends
-			ResourceServerConfigurerAdapter {
+	protected static class ResourceServer extends ResourceServerConfigurerAdapter {
 
 		// This method configures the OAuth scopes required by clients to access
 		// all of the paths in the video service.
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
 			
+			//TODO: Update scope of client requests here
+
 			http.csrf().disable();
 			
-			http
-			.authorizeRequests()
-				.antMatchers("/oauth/token").anonymous();
-			
+			http.authorizeRequests().antMatchers("/oauth/token").anonymous();
 			
 			// If you were going to reuse this class in another
 			// application, this is one of the key sections that you
 			// would want to change
 			
 			// Require all GET requests to have client "read" scope
-			http
-			.authorizeRequests()
-				.antMatchers(HttpMethod.GET, "/**")
+			http.authorizeRequests().antMatchers(HttpMethod.GET, "/**")
 				.access("#oauth2.hasScope('read')");
 			
 			// Require all other requests to have "write" scope
-			http
-			.authorizeRequests()
-				.antMatchers("/**")
+			http.authorizeRequests().antMatchers("/**")
 				.access("#oauth2.hasScope('write')");
 		}
 
@@ -118,15 +113,12 @@ public class OAuth2SecurityConfiguration {
 	@Configuration
 	@EnableAuthorizationServer
 	@Order(Ordered.LOWEST_PRECEDENCE - 100)
-	protected static class OAuth2Config extends
-			AuthorizationServerConfigurerAdapter {
+	protected static class OAuth2Config extends AuthorizationServerConfigurerAdapter {
 
-		// Delegate the processing of Authentication requests to the framework
-		@Autowired
+		private final ClientAndUserDetailsService combinedService;
+
+		@Autowired // Delegate the processing of Authentication requests to the framework
 		private AuthenticationManager authenticationManager;
-
-		// A data structure used to store both a ClientDetailsService and a UserDetailsService
-		private ClientAndUserDetailsService combinedService_;
 
 		/**
 		 * 
@@ -148,37 +140,34 @@ public class OAuth2SecurityConfiguration {
 			
 			
 			// Create a service that has the credentials for all our clients
-			ClientDetailsService csvc = new InMemoryClientDetailsServiceBuilder()
-					// Create a client that has "read" and "write" access to the
-			        // video service
-					.withClient("mobile").authorizedGrantTypes("password")
-					.authorities("ROLE_CLIENT", "ROLE_TRUSTED_CLIENT")
-					.scopes("read","write").resourceIds("video")
-					.and()
-					// Create a second client that only has "read" access to the
-					// video service
-					.withClient("mobileReader").authorizedGrantTypes("password")
-					.authorities("ROLE_CLIENT")
-					.scopes("read").resourceIds("video")
-					.accessTokenValiditySeconds(3600).and().build();
+			final ClientDetailsService clientDetailsService = new InMemoryClientDetailsServiceBuilder()
+				// Create a client that has "read" and "write" access to the video service
+				.withClient("mobile").authorizedGrantTypes("password")
+				.authorities("ROLE_CLIENT", "ROLE_TRUSTED_CLIENT")
+				.scopes("read","write").resourceIds("video")
+				.and()
+				// Create a second client that only has "read" access to the video service
+				.withClient("mobileReader").authorizedGrantTypes("password")
+				.authorities("ROLE_CLIENT")
+				.scopes("read").resourceIds("video")
+				.accessTokenValiditySeconds(3600).and().build();
 
 			// Create a series of hard-coded users. 
-			UserDetailsService svc = new InMemoryUserDetailsManager(
-					Arrays.asList(
-							User.create("admin", "pass", "ADMIN", "USER"),
-							User.create("user0", "pass", "USER"),
-							User.create("user1", "pass", "USER"),
-							User.create("user2", "pass", "USER"),
-							User.create("user3", "pass", "USER"),
-							User.create("user4", "pass", "USER"),
-							User.create("user5", "pass", "USER")));
+			final UserDetailsService userDetailsService = new InMemoryUserDetailsManager(Arrays.asList(
+				User.create("admin", "pass", "ADMIN", "USER"),
+				User.create("user0", "pass", "USER"),
+				User.create("user1", "pass", "USER"),
+				User.create("user2", "pass", "USER"),
+				User.create("user3", "pass", "USER"),
+				User.create("user4", "pass", "USER"),
+				User.create("user5", "pass", "USER")));
 
 			// Since clients have to use BASIC authentication with the client's id/secret,
 			// when sending a request for a password grant, we make each client a user
 			// as well. When the BASIC authentication information is pulled from the
 			// request, this combined UserDetailsService will authenticate that the
 			// client is a valid "user". 
-			combinedService_ = new ClientAndUserDetailsService(csvc, svc);
+			combinedService = new ClientAndUserDetailsService(clientDetailsService, userDetailsService);
 		}
 
 		/**
@@ -186,7 +175,7 @@ public class OAuth2SecurityConfiguration {
 		 */
 		@Bean
 		public ClientDetailsService clientDetailsService() throws Exception {
-			return combinedService_;
+			return combinedService;
 		}
 
 		/**
@@ -194,7 +183,7 @@ public class OAuth2SecurityConfiguration {
 		 */
 		@Bean
 		public UserDetailsService userDetailsService() {
-			return combinedService_;
+			return combinedService;
 		}
 
 		/**
@@ -224,55 +213,32 @@ public class OAuth2SecurityConfiguration {
 	// support HTTPS. The code below performs the configuration of Tomcat
 	// for HTTPS. Each web container has a different API for configuring
 	// HTTPS. 
-	//
-	// The app now requires that you pass the location of the keystore and
-	// the password for your private key that you would like to setup HTTPS
-	// with. In Eclipse, you can set these options by going to:
-	//    1. Run->Run Configurations
-	//    2. Under Java Applications, select your run configuration for this app
-	//    3. Open the Arguments tab
-	//    4. In VM Arguments, provide the following information to use the
-	//       default keystore provided with the sample code:
-	//
-	//       -Dkeystore.file=src/main/resources/private/keystore -Dkeystore.pass=changeit
-	//
-	//    5. Note, this keystore is highly insecure! If you want more securtiy, you 
-	//       should obtain a real SSL certificate:
-	//
-	//       http://tomcat.apache.org/tomcat-7.0-doc/ssl-howto.html
-	//
     @Bean
     EmbeddedServletContainerCustomizer containerCustomizer(
             @Value("${keystore.file:src/main/resources/private/keystore}") String keystoreFile,
             @Value("${keystore.pass:changeit}") final String keystorePass) throws Exception {
 
-		// If you were going to reuse this class in another
-		// application, this is one of the key sections that you
-		// would want to change
-    	
         final String absoluteKeystoreFile = new File(keystoreFile).getAbsolutePath();
 
         return new EmbeddedServletContainerCustomizer () {
-
 			@Override
 			public void customize(ConfigurableEmbeddedServletContainer container) {
-		            TomcatEmbeddedServletContainerFactory tomcat = (TomcatEmbeddedServletContainerFactory) container;
-		            tomcat.addConnectorCustomizers(
-		                    new TomcatConnectorCustomizer() {
-								@Override
-								public void customize(Connector connector) {
-									connector.setPort(8443);
-			                        connector.setSecure(true);
-			                        connector.setScheme("https");
-
-			                        Http11NioProtocol proto = (Http11NioProtocol) connector.getProtocolHandler();
-			                        proto.setSSLEnabled(true);
-			                        proto.setKeystoreFile(absoluteKeystoreFile);
-			                        proto.setKeystorePass(keystorePass);
-			                        proto.setKeystoreType("JKS");
-			                        proto.setKeyAlias("tomcat");
-								}
-		                    });
+	            ((TomcatEmbeddedServletContainerFactory) container).addConnectorCustomizers(
+	                new TomcatConnectorCustomizer() {
+						@Override
+						public void customize(Connector connector) {
+							connector.setPort(8443);
+	                        connector.setSecure(true);
+	                        connector.setScheme("https");
+	
+	                        Http11NioProtocol proto = (Http11NioProtocol) connector.getProtocolHandler();
+	                        proto.setSSLEnabled(true);
+	                        proto.setKeystoreFile(absoluteKeystoreFile);
+	                        proto.setKeystorePass(keystorePass);
+	                        proto.setKeystoreType("JKS");
+	                        proto.setKeyAlias("tomcat");
+						}
+	                });
 		    
 			}
         };

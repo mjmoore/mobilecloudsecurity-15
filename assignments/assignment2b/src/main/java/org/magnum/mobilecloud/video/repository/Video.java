@@ -79,7 +79,6 @@ public class Video {
 	/**
 	 * Two Videos will generate the same hashcode if they have exactly the same
 	 * values for their name, url, and duration.
-	 * 
 	 */
 	@Override
 	public int hashCode() {
@@ -90,7 +89,6 @@ public class Video {
 	/**
 	 * Two Videos are considered equal if they have exactly the same values for
 	 * their name, url, and duration.
-	 * 
 	 */
 	@Override
 	public boolean equals(Object obj) {
@@ -100,9 +98,9 @@ public class Video {
 			return Objects.equal(name, other.name)
 					&& Objects.equal(url, other.url)
 					&& duration == other.duration;
-		} else {
-			return false;
-		}
+		} 
+		
+		return false;
 	}
 
 }
