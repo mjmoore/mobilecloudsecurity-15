@@ -116,8 +116,12 @@ public class OAuth2SecurityConfiguration {
 				.access("#oauth2.hasScope('read')");
 			
 			// Require all other requests to have "write" scope
-			http.authorizeRequests().antMatchers("/**")
+			http.authorizeRequests().antMatchers(HttpMethod.POST, "/**")
 				.access("#oauth2.hasScope('write')");
+
+			http.authorizeRequests().antMatchers(HttpMethod.DELETE, "/**")
+				.access("#oauth2.hasScope('write')");
+			
 		}
 
 	}
