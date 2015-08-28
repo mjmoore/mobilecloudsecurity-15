@@ -1,5 +1,13 @@
 package org.magnum.mobilecloud.video.repository;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+
 import com.google.common.base.Objects;
 
 /**
@@ -16,14 +24,19 @@ import com.google.common.base.Objects;
  * 
  * @author mitchell
  */
+@Entity
 public class Video {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	private long id;
 
 	private String name;
+	private String title;
 	private String url;
 	private long duration;
-	private long likes;
+	private long likes = 0;
+	private String owner;
 	
 	public Video() {
 	}
@@ -31,9 +44,18 @@ public class Video {
 	public Video(String name, String url, long duration, long likes) {
 		super();
 		this.name = name;
+		this.title = name;
 		this.url = url;
 		this.duration = duration;
 		this.likes = likes;
+	}
+	
+	public void setOwner(String owner) {
+		this.owner = owner;
+	}
+	
+	public String getOwner() {
+		return this.owner;
 	}
 
 	public String getName() {
@@ -97,6 +119,7 @@ public class Video {
 			// Google Guava provides great utilities for equals too!
 			return Objects.equal(name, other.name)
 					&& Objects.equal(url, other.url)
+					&& Objects.equal(owner, other.owner)
 					&& duration == other.duration;
 		} 
 		

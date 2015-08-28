@@ -98,14 +98,7 @@ public class OAuth2SecurityConfiguration {
 			http.csrf().disable();
 			
 			http.authorizeRequests().antMatchers("/oauth/token").anonymous();
-			
-			http.formLogin().loginProcessingUrl("/login")
-				.permitAll()
-				.successHandler(new AuthenticationSuccessHandler() {
-					public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-							Authentication authentication) throws IOException, ServletException {
-						response.setStatus(HttpStatus.SC_OK);
-					}});
+
 			
 			// If you were going to reuse this class in another
 			// application, this is one of the key sections that you
@@ -114,12 +107,8 @@ public class OAuth2SecurityConfiguration {
 			// Require all GET requests to have client "read" scope
 			http.authorizeRequests().antMatchers(HttpMethod.GET, "/**")
 				.access("#oauth2.hasScope('read')");
-			
-			// Require all other requests to have "write" scope
-			http.authorizeRequests().antMatchers(HttpMethod.POST, "/**")
-				.access("#oauth2.hasScope('write')");
 
-			http.authorizeRequests().antMatchers(HttpMethod.DELETE, "/**")
+			http.authorizeRequests().antMatchers("/**")
 				.access("#oauth2.hasScope('write')");
 			
 		}

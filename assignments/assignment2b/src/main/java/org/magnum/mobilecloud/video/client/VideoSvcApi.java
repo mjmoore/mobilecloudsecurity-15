@@ -3,6 +3,7 @@ package org.magnum.mobilecloud.video.client;
 import java.util.Collection;
 
 import org.magnum.mobilecloud.video.repository.Video;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import retrofit.http.Body;
 import retrofit.http.GET;
